@@ -40,9 +40,9 @@ Follow these steps to run the code:
 
 1. Open two terminals. I'll refer to them as left and right.
 2. In the left terminal `cd` to the _AkkaRemotingTutorial_ directory.
-3. Type `sbt 'W150'`
+3. Type `sbt 'run W150'`
 4. In the right teminal `cd` to the _AkkaRemotingTutorial_ directory.
-5. Type `sbt 'M150'`
+5. Type `sbt 'run M150'`
 
 The two consoles should ... When the action stops, stop each system by pressing
 Ctrl-C.
