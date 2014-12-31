@@ -1,9 +1,6 @@
-package org.bodhi
+package org.bodhi.remoting
 
-/**
- * Created by chris on 12/29/14.
- */
-package object t0 {
+package object tutorial {
   case object Start
   case object Nag
 }

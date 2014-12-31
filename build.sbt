@@ -11,7 +11,7 @@ maintainer := "Your Name <your@email.com>"
 
 organization := "org.bodhi"
 
-name := "Tutorial0"
+name := "Tutorial"
 
 version := "1.0"
 

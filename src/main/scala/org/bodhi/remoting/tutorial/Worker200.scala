@@ -1,4 +1,4 @@
-package org.bodhi.t0
+package org.bodhi.remoting.tutorial
 
 import com.typesafe.config.ConfigFactory
 import akka.actor.{Actor, Props, ActorSystem}

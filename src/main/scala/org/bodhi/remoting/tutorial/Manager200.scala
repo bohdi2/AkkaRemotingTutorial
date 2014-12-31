@@ -1,4 +1,4 @@
-package org.bodhi.t0
+package org.bodhi.remoting.tutorial
 
 import akka.actor.{Identify, ActorSystem, Props}
 import akka.util.Timeout

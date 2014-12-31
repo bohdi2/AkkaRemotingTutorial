@@ -1,43 +1,52 @@
-Akka Remote Tutorial 0
+Akka Remote Tutorial
 ======================
 
-This is a tutorial about using Akka remote actors. I start with
-a simple example taken from the "Let It Crash" website: http://letitcrash.com/post/14630948149/location-transparency-remoting-in-akka-2-0
-I have updated the example to Akka 2.3.4 and placed it under the org.bodhi package.
+This is a tutorial about using Akka remote actors. I hope that by taking a different approach from 
+ existing tutorials that I can create something helpful.
+ 
+ I assume you know Scala, SBT, and the basics of Akka. If so then we're both on the same page. I am
+ not an expert, just trying to learn this stuff as are you.
+ 
+Location Transparency and Environment
+-------------------------------------
 
-In this first example there are two actors running under the same JVM. 
+The Akka people have worked hard to make Akka remoting as simple as possible. For the most part very
+little of your code will need to change when you covert over. That is the good news. The bad news is
+that how you think about your code and design may change, and that may lead to code changes. This should
+not be surprising...
 
-As it's name indicates, this is a simple "Hello, world" example
-for Akka remote actors. It shows how to create a local actor,
-a remote actor, and send messages between them.
+It is possible to run multiple remote actors in a single JVM and many of the examples on the web do exactly
+that. I think that is confusing as hell and I'm not taking that approach. You will need to open two
+terminal windows and invoke `sbt` from them. Some times you may want to run the examples on separate 
+machines and in this case you have two options: run `sbt` on both machines, or copy the uber jar and run
+it directly. In my case my other machine is a Raspberry Pi and invoking `sbt` on it is painful.
 
-This is a fork of Alvin Alexander's original code. I am modifying it to
-learn about creating distributions with STB. My goal is to deploy the
-remote piece on RaspBerry Pis.
+Stupid Stuff
+------------
 
-Assumptions
------------
+In my examples I have actors for Managers and Workers. I picked these roles and names because I don't 
+like names like "ActorA" or "ActorSystem3".
 
-For the purposes of this code, I assume you know the following:
-
-1. Scala
-1. SBT (the Simple Build Tool)
-1. How to use Akka actors within one JVM (i.e., the actor basics)
+The example code files are given names like "Worker150" and "Manager200". Typically Workers and Managers
+with the same numeric ending are meant to work together. So "Worker340" and "Manager340" go together. The
+numbers don't mean anything.
 
 Running the Code
 ----------------
 
+I am using Scala 2.11.4, Akka 2.3.4, and SBT 0.13.7
+
 Follow these steps to run the code:
 
-1. `cd` into the _HelloRemote_ directory.
-1. Type `sbt run` to start the remote actor system.
-1. In a separate terminal window, `cd` into the _HelloLocal_ directory.
-1. Type `sbt run` to start the local actor system.
+1. Open two terminals. I'll refer to them as left and right.
+2. In the left terminal `cd` to the _AkkaRemotingTutorial_ directory.
+3. Type `sbt 'W150'`
+4. In the right teminal `cd` to the _AkkaRemotingTutorial_ directory.
+5. Type `sbt 'M150'`
 
-When the local actor system starts, it will send an initial message
-to the remote actor system. The remote actor will send a reply through
-its `sender` reference, and this will continue five times. When the
-action stops, stop each system by pressing Ctrl-C.
+The two consoles should ... When the action stops, stop each system by pressing
+Ctrl-C.
+
 
 Problems?
 ---------
@@ -49,8 +58,6 @@ comments from the debug-related lines.
 More Information
 ----------------
 
-See the following URL for more and original information:
 
-http://alvinalexander.com/scala/simple-akka-actors-remote-example
 
 

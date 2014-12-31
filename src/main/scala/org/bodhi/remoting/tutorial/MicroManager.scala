@@ -1,10 +1,10 @@
-package org.bodhi.t0
+package org.bodhi.remoting.tutorial
 
 import akka.actor.{ActorSelection, Actor}
 
 class MicroManager(worker: ActorSelection) extends Actor {
   def receive = {
-    case Start => {
+    case Start =>
       println("MicroManager starts to nag")
 
       // MicroManager needs to lookup the worker. Again use a URI containing the
@@ -14,6 +14,6 @@ class MicroManager(worker: ActorSelection) extends Actor {
       // Now send some messages to it
       worker ! Nag
       worker ! Nag
-    }
+
   }
 }
