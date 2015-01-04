@@ -43,22 +43,23 @@ Follow these steps to run the code:
 3. Type `sbt 'run W150'`. On my desktop I get this output:
 <pre>
 > sbt 'run W150'
-````[info] Loading project definition from /home/chris/projects/akka/AkkaRemotingTutorial/project
+[info] Loading project definition from /home/chris/projects/akka/AkkaRemotingTutorial/project
 [info] Set current project to Tutorial (in build file:/home/chris/projects/akka/AkkaRemotingTutorial/)
 [info] Running org.bodhi.remoting.tutorial.Main W150
 Main W150
-ChattyWorker preStart````
+ChattyWorker preStart
 </pre>
-
 4. In the right teminal `cd` to the _AkkaRemotingTutorial_ directory.
 5. Type `sbt 'run M150'`. On my desktop I get this output:
-````> sbt 'run M150'
+<pre>
+> sbt 'run M150'
 [info] Loading project definition from /home/chris/projects/akka/AkkaRemotingTutorial/project
 [info] Set current project to Tutorial (in build file:/home/chris/projects/akka/AkkaRemotingTutorial/)
 [info] Running org.bodhi.remoting.tutorial.Main M150
 Main M150
 Looking for akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker
-found: Some(Actor[akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker#537855532])````
+found: Some(Actor[akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker#537855532])
+</pre>
 
 
 The two consoles should ... When the action stops, stop each system by pressing
