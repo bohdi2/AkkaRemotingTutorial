@@ -41,12 +41,14 @@ Follow these steps to run the code:
 1. Open two terminals. I'll refer to them as left and right.
 2. In the left terminal `cd` to the _AkkaRemotingTutorial_ directory.
 3. Type `sbt 'run W150'`. On my desktop I get this output:
+<pre>
 > sbt 'run W150'
 ````[info] Loading project definition from /home/chris/projects/akka/AkkaRemotingTutorial/project
 [info] Set current project to Tutorial (in build file:/home/chris/projects/akka/AkkaRemotingTutorial/)
 [info] Running org.bodhi.remoting.tutorial.Main W150
 Main W150
 ChattyWorker preStart````
+</pre>
 
 4. In the right teminal `cd` to the _AkkaRemotingTutorial_ directory.
 5. Type `sbt 'run M150'`. On my desktop I get this output:
