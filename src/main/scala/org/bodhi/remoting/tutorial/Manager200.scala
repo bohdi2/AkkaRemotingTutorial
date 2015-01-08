@@ -1,11 +1,11 @@
 package org.bodhi.remoting.tutorial
 
-import akka.actor.{Identify, ActorSystem, Props}
+import akka.actor.{ActorSystem}
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import akka.pattern.ask
 import akka.util.Timeout
+import org.bodhi.remoting.tutorial.Profile._
 import scala.concurrent.duration._
 
 // At this stage of the tutorial the code is still very contrived but we've added the necessary 
@@ -19,22 +19,24 @@ import scala.concurrent.duration._
 
 class Manager200 {
 
-  // Create a manager actor system
-  val managers = ActorSystem("managerSystem", ConfigFactory.parseString("""
-    akka {
-      //loglevel = "DEBUG"
-      actor {
-        provider = "akka.remote.RemoteActorRefProvider"
-      }
-      remote {
-        enabled-transports =  ["akka.remote.netty.tcp"]
-        netty.tcp {
-          hostname = "127.0.0.1"
-          port = 5051
-        }
-      }
+  val config = """
+  akka {
+    loglevel = "WARNING"
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
     }
-  """))
+
+    remote.netty.tcp {
+      hostname = ${profile.manager.hostname}
+      port = ${profile.manager.port}
+    }
+  }
+  """.loadConfig
+
+  println("conf: " + config.getConfig("akka.remote.netty.tcp"))
+  
+  // Create a manager actor system
+  val managers = ActorSystem("managerSystem", config)
  
   implicit val timeout = Timeout(5 seconds)
   val remotePath = "akka.tcp://workerSystem@127.0.0.1:5150/user/idiotWorker"

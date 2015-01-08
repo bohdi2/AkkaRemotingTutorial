@@ -1,20 +1,18 @@
 package org.bodhi.remoting.tutorial
 
-import com.typesafe.config.{ConfigResolveOptions, ConfigParseOptions, ConfigFactory, Config}
+import com.typesafe.config.{ConfigFactory}
 
 
 object Profile {
   
-  def load(name: String): Config = {
-    val conf = ConfigFactory.load("common")
-    val profiles = conf.withOnlyPath("profiles")
+  implicit class StringLoader(val s: String) {
+    def loadConfig = {
+      val profileName = scala.util.Properties.envOrElse("profileName", "loopback")
+      val profileConfig = ConfigFactory.load("local")
 
-    val profile = profiles.getString("profiles.profile")
-
-    val pc = profiles.getConfig("profiles." + profile)
-
-    ConfigFactory.load(name,
-                       ConfigParseOptions.defaults(),
-                       ConfigResolveOptions.defaults().setAllowUnresolved(true)).resolveWith(pc)
+      ConfigFactory.parseString(s).withFallback(profileConfig).resolve
+    }
+ 
   }
+  
 }

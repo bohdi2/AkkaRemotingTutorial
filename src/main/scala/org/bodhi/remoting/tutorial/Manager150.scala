@@ -1,24 +1,54 @@
 package org.bodhi.remoting.tutorial
 
-import akka.actor.{Identify, ActorIdentity, ActorSystem}
+import akka.actor.ActorSystem
+import org.bodhi.remoting.tutorial.Profile._
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import akka.pattern.ask
+import scala.concurrent.ExecutionContext.Implicits.global
+
+import scala.util.{Failure, Success}
 
 class Manager150 {
-  val conf = Profile.load("Manager150")
+  val config = """
+  akka {
+    loglevel = "WARNING"
+    actor {
+      provider = "akka.remote.RemoteActorRefProvider"
+    }
+
+    remote.netty.tcp {
+      hostname = ${profile.manager.hostname}
+      port = ${profile.manager.port}
+    }
+  }
+  """.loadConfig
+
+  // Construct the remote path to the ChattyWorker.
+  val hostname = config.getString("profile.worker.hostname")
+  val port = config.getString("profile.worker.port")
   
-  val managerSystem = ActorSystem("managerSystem", conf)
+  val workerPath = s"akka.tcp://workerSystem@$hostname:$port/user/chattyWorker"
+  println(workerPath)
+  // Create an ActorSystem and ask it for the ActorRef corresponding to the
+  // workerPath we just created. This is complicated by the need to
+  // use ActorSystem.actorSelection() and because it is possible (very possible) that the
+  // remote chattyWorker we're looking for does not exist. Why might it not exist? Perhaps
+  // you forgot to start the worker program?
   
-  val remotePath = conf.getString("remotePath")
+  val managerSystem = ActorSystem("managerSystem", config)
+  
+  val selection = managerSystem.actorSelection(workerPath)
 
-  val selection = managerSystem.actorSelection(remotePath)
+  // Once we have a ActorSelection we need to get an Actor from it. There are a few ways to do
+  // this. I'm using resolveOne() which returns a Future and I just wait for it to finish.
+  // If it returns correctly (it found the ChattyWorker) then I send "Hello" to the worker; otherwise
+  // I print an error.
+  selection.resolveOne(5.seconds).onComplete {
+    case Success(actor) =>
+      println(s"Found $actor")
+      actor ! "Hello"
 
-  val future = selection.ask(Identify(remotePath))(5.seconds)
-
-  val result = Await.result(future, 5.seconds).asInstanceOf[ActorIdentity]
-
-  println("Looking for " + remotePath)
-  println("found: " + result.ref)
-
+    case Failure(ex) =>
+      println(s"Did not find anything for $workerPath")
+  }
 }
+

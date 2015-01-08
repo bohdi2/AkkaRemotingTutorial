@@ -8,6 +8,7 @@ object Main extends App {
   val name = args(0)
 
   name match {
+    case "C100" => new Config100()
     case "T100" => new Tutorial100()
     case "M150" => new Manager150()
     case "W150" => new Worker150()
