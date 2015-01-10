@@ -1,7 +1,6 @@
 package org.bodhi.remoting.tutorial
 
 import akka.actor.ActorSystem
-import org.bodhi.remoting.tutorial.Profile._
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -9,25 +8,24 @@ import scala.util.{Failure, Success}
 
 class Manager150 {
   val config = """
-  akka {
-    loglevel = "WARNING"
-    actor {
-      provider = "akka.remote.RemoteActorRefProvider"
-    }
+  |akka {
+  |  loglevel = "WARNING"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  | remote.netty.tcp {
+  |   hostname = ${manager.hostname}
+  |   port = ${manager.port}
+  | }
+  |}
+  |
+  |workerPath = "akka.tcp://workerSystem@"${worker.hostname}":"${worker.port}"/user/chattyWorker"
+  |
+  """.stripMargin.loadConfig
 
-    remote.netty.tcp {
-      hostname = ${profile.manager.hostname}
-      port = ${profile.manager.port}
-    }
-  }
-  """.loadConfig
-
-  // Construct the remote path to the ChattyWorker.
-  val hostname = config.getString("profile.worker.hostname")
-  val port = config.getString("profile.worker.port")
-  
-  val workerPath = s"akka.tcp://workerSystem@$hostname:$port/user/chattyWorker"
+  val workerPath = config.getString("workerPath")
   println(workerPath)
+
   // Create an ActorSystem and ask it for the ActorRef corresponding to the
   // workerPath we just created. This is complicated by the need to
   // use ActorSystem.actorSelection() and because it is possible (very possible) that the

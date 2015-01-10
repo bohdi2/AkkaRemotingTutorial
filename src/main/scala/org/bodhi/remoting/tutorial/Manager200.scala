@@ -5,7 +5,6 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import akka.pattern.ask
 import akka.util.Timeout
-import org.bodhi.remoting.tutorial.Profile._
 import scala.concurrent.duration._
 
 // At this stage of the tutorial the code is still very contrived but we've added the necessary 
