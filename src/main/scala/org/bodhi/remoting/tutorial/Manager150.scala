@@ -27,10 +27,9 @@ class Manager150 {
   println(workerPath)
 
   // Create an ActorSystem and ask it for the ActorRef corresponding to the
-  // workerPath we just created. This is complicated by the need to
+  // workerPath. This is complicated by the need to
   // use ActorSystem.actorSelection() and because it is possible (very possible) that the
-  // remote chattyWorker we're looking for does not exist. Why might it not exist? Perhaps
-  // you forgot to start the worker program?
+  // remote chattyWorker we're looking for does not exist.
   
   val managerSystem = ActorSystem("managerSystem", config)
   

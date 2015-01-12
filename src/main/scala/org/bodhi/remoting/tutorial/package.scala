@@ -13,6 +13,5 @@ package object tutorial {
       val profileConfig = ConfigFactory.parseResources(s"$profileName.conf")
       ConfigFactory.parseString(s).withFallback(profileConfig).resolve
     }
-
   }
 }

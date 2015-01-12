@@ -1,76 +1,45 @@
 Akka Remote Tutorial
 ======================
 
-This is a tutorial about using Akka remote actors. I hope that by taking a different approach from 
- existing tutorials that I can create something helpful.
+This is a tutorial about Akka remote actors. I've taken a different approach from
+ existing tutorials and I hope that it is helpful.
  
-I assume you know Scala, SBT, and the basics of Akka. If so then we're both on the same page. I am
- not an expert, just trying to learn this stuff as are you.
+I assume you know Scala, SBT, and the basics of Akka. If you do then we're both on the same page. I am
+ not an expert, just someone trying to learn this stuff as are you.
  
 #Introduction
 
-##Stupid Stuff
-
  In my examples I have actors for Managers and Workers. I picked these roles and names because I don't
- like names like "ActorA" or "ActorSystem3".
+ like names such as "ActorA" or "ActorSystem3".
 
  The example code files are given names like "Worker150" and "Manager200". Workers and Managers
- with the same numeric ending are meant to work together. So "Worker340" and "Manager340" go together. The
- numbers don't mean anything.
+ with the same numeric ending are meant to work together. So "Worker340" and "Manager340" go together.
  
-##Location Transparency and Environment
+ You will need to open two terminal windows and invoke `sbt` from them. You will run Workers in one
+ terminal, and Managers in the other. It is easiest to run the Worker and Manager programs on the same
+ machine, but you can also run them on separate machines. I suggest that you try this since running on
+ multiple machines is point of remoting. When running on multiple machines you have two options for 
+ starting the programs: run `sbt` on both machines, or copy the uber jar to one of the machines 
+ and run it directly. In my case my other machine is a Raspberry Pi and invoking `sbt` on the Pi is 
+ painfully slow so I just copy the uber jar to it and run it with `java -jar`. I'll explain the steps 
+ in detail further on.
 
-The Akka people have worked hard to make Akka remoting as simple as possible. For the most part very
-little of your code will need to change when you covert over. That is the good news. The bad news is
-that how you think about your code and design may change, and that may lead to code changes. This should
-not be surprising...
-
-It is possible to run multiple remote actors in a single JVM and many of the examples on the web do exactly
-that. I think that is confusing as hell and I'm not taking that approach. You will need to open two
-terminal windows and invoke `sbt` from them. Some times you may want to run the examples on separate 
-machines and in this case you have two options: run `sbt` on both machines, or copy the uber jar and run
-it directly. In my case my other machine is a Raspberry Pi and invoking `sbt` on it is painfully slow so
-I just copy the uber jar.
-
-The code has a primitive concept of profiles. The default is to use the "loopback" profile which uses
-127.0.0.1 as the host ip for both the worker and manager systems. You can change the profile that is used
-by overriding the "profiles.profile" configuration. An example will be shown below. There are three profiles
-defined in the file common.conf:
+The code has a primitive concept of profiles. The default is to use the "loopback" profile which sets the
+host ip to 127.0.0.1 for both the worker and manager systems. You can change the profile that is used
+by overriding the "profileName" system property. An example will be shown below. There are three profiles
+defined: `loopback` that uses 127.0.01 , `local` that you can edit to use your non loopback IP, and 
+`rpi1` which you can edit for running on two machines. The profiles are defined in the resource directory
+as loopback.conf, local.conf, and rpi1.conf. Here's loopback.conf
 
 ```
-profiles {
-  loopback {
-    manager.hostname = "127.0.0.1"
-    manager.port = 5001
+//loopback.conf
+manager.hostname = "127.0.0.1"
+manager.port = 5001
 
-    worker.hostname = "127.0.0.1"
-    worker.port = 5000
-  }
-
-  local {
-    manager.hostname = "192.168.1.8"
-    manager.port = 5001
-
-    worker.hostname = "192.168.1.8"
-    worker.port = 5000
-  }
-
-  foo {
-    manager.hostname = "192.168.0.0.1"
-    manager.port = 5001
-
-    worker.hostname = "192.168.0.1"
-    worker.port = 5000
-  }
-
-  profile = loopback // Default
-}
+worker.hostname = "127.0.0.1"
+worker.port = 5000
 ```
     
-The "local" profile is for running the worker and manager on the same machine using their real IP addresses. The
-"foo" profile is for running the worker and manager on separate machines. In both cases you should edit
-the files and use your IP addresses.
-
 ##Running the Code
 
 I am using Scala 2.11.4, Akka 2.3.4, and SBT 0.13.7 on a Ubuntu desktop and on Raspberry Pi's.
@@ -88,7 +57,7 @@ Follow these steps to run the code:
 Main W150
 ChattyWorker preStart
 </pre>
-4. In the right teminal `cd` to the _AkkaRemotingTutorial_ directory.
+4. In the right terminal `cd` to the _AkkaRemotingTutorial_ directory.
 5. Type `sbt 'run M150'`. On my desktop I get this output and you should see something similar.
 <pre>
 > sbt 'run M150'
@@ -96,14 +65,17 @@ ChattyWorker preStart
 [info] Set current project to Tutorial (in build file:/home/chris/projects/akka/AkkaRemotingTutorial/)
 [info] Running org.bodhi.remoting.tutorial.Main M150
 Main M150
-Looking for akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker
-found: Some(Actor[akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker#537855532])
+akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker
+Found Actor[akka.tcp://workerSystem@127.0.0.1:5000/user/chattyWorker#199825620]
 </pre>
 If you get warnings and errors about invalid associations and connections refused then there is
 a configuration problem (or my code is wrong).
 
 
 #Lesson 150
+
+Simple example of remote Actor lookup. The Worker150 program starts first. When Manager150 starts it gets
+a remote reference to Worker150's Actor and sends it a "Hello" message.
 
 ##Worker150
 The Worker150 is just an ActorSystem with one actor (ChattyWorker). When ChattyWorker gets a
@@ -116,68 +88,75 @@ import akka.actor.{Props, ActorSystem}
 
 class Worker150 {
 
-  // Load worker's configuration
-  val conf = Profile.load("Worker150")
-  println("conf: " + conf.getConfig("akka.remote.netty.tcp"))
+  val config = """
+  |akka {
+  |  loglevel = "WARNING"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  |  remote.netty.tcp {
+  |    hostname = ${worker.hostname}
+  |    port = ${worker.port}
+  |  }
+  |}
+  """.stripMargin.loadConfig
 
   // Create ActorSystem and add a "chattyWorker" who echoes all messages he gets
   // to stdout.
-  val workerSystem = ActorSystem("workerSystem", conf)
+  val workerSystem = ActorSystem("workerSystem", config)
   workerSystem.actorOf(Props(new ChattyWorker), "chattyWorker")
 }
 ```
 
-And here is ChattyWorker.scala
+When you run the Worker150 program its single Actor (ChattyWorker) waits to receive messages,
+but where will those messages come from? In our case they will come from the
+Manger150 program running in its own JVM possibly on another machine. But first let's take a look at 
+Worker150's configuration.
 
 ```scala
-package org.bodhi.remoting.tutorial
-
-import akka.actor.Actor
-
-class ChattyWorker extends Actor {
-  override def preStart(): Unit = println("ChattyWorker preStart")
-  override def postStop(): Unit = println("ChattyWorker postStop")
-
-  def receive = {
-    case msg: Any => println(s"ChattyWorker got message: $msg")
-  }
-}
+  val config = """
+  |akka {
+  |  loglevel = "WARNING"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  |  remote.netty.tcp {
+  |    hostname = ${worker.hostname}
+  |    port = ${worker.port}
+  |  }
+  |}
+  """.stripMargin.loadConfig
 ```
 
-When you run the Worker150 program its single Actor (ChattyWorker) waits to receive messages. 
-But wait a minute, where will these messages come from? In our case they will come from the
-Manger150 program running in its own JVM possibly on another machine. First let's take a look at 
-Worker150.conf configuration file.
+There are a few things to notice about the code fragment:
 
-```
-akka {
-  loglevel = "WARNING"
+1. Typically the configuration would go into a resource file, but for clarity I'm including it in the
+Scala code. The `loadConfig` is an implicit defined in Package.scala.
+2. The `${worker.hostname}` and `${worker.port}` take their values from the appropriate profile. Dig into
+the code if you want to learn how it works. If you're using the default loopback profile their values 
+will be 127.0.0.1 and 5000.
 
-  actor {
-    provider = "akka.remote.RemoteActorRefProvider"
-  }
-  
-  remote.netty.tcp {
-    hostname = ${worker.hostname}
-    port = ${worker.port}
-  }
-}
-```
-
-There are a few things to notice
+And a few things to notice about the configuration itself:
 
 1. The "akka.actor.provider" is set to use RemoteActorRefProvider instead of the default 
 LocalActorRefProvider. The RemoteActorRefProvider performs Akka magic to allow one instance 
 of Akka talk to another instance. How this works is way beyond the scope of this tutorial.
-2. There is a "akka.remote" section. This section controls how our "workerSystem" will run and how it will
-appear to other remote nodes. In this case it says that "workerSystem" lives on the ${worker.hostname} 
-and will listen to connections from other Akka nodes on port ${worker.port}
-3. The ${worker.hostname} and ${worker.port} will resolve to a specific profile. If you're using the
-default loopback profile their values will be 127.0.0.1 and 5000.
+2. The "akka.remote" section controls how our ActorSystem will run and how it will
+appear to other remote Akka nodes. In this case our ActorSystem will live on
+${worker.hostname} and it will listen to connections from other Akka nodes on port ${worker.port}
 
 It is worth emphasizing that the "akka.remote" section defines how other akka instances will connect
-to the Worker150 program. The "akka.remote" section is not a list of remote systems that Worker150 will
+to the Worker150 program. It is not a list of remote systems that Worker150 will
 connect to. 
+
+The rest of the program simply creates an ActorSystem and adds the ChattyWorker to it.
+
+```scala
+  // Create ActorSystem and add a "chattyWorker" who echoes all messages he gets
+  // to stdout.
+  val workerSystem = ActorSystem("workerSystem", config)
+  workerSystem.actorOf(Props(new ChattyWorker), "chattyWorker")
+```
 
 ###Output
 When you run the program you should get output similar to this:
@@ -190,8 +169,7 @@ Main W150
 ChattyWorker preStart
 </pre>
 
-The last line "ChattyWorker preStart" is printed by ChattyWorker when it starts. At this point we know
-that the worker is alive and waiting for messages.
+The last line "ChattyWorker preStart" indicates ChattyWorker is alive and waiting for messages.
 
 ##Manager150
 
@@ -203,32 +181,42 @@ package org.bodhi.remoting.tutorial
 import akka.actor.ActorSystem
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+
 import scala.util.{Failure, Success}
 
 class Manager150 {
-  // Load Manager's configuration
-  val conf = Profile.load("Manager150")
-  
-  // Construct the remote path to the ChattyWorker.
-  val hostname = conf.getString("worker.hostname")
-  val port = conf.getString("worker.port")
-  
-  val workerPath = s"akka.tcp://workerSystem@$hostname:$port/user/chattyWorker"
-  
+  val config = """
+  |akka {
+  |  loglevel = "WARNING"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  | remote.netty.tcp {
+  |   hostname = ${manager.hostname}
+  |   port = ${manager.port}
+  | }
+  |}
+  |
+  |workerPath = "akka.tcp://workerSystem@"${worker.hostname}":"${worker.port}"/user/chattyWorker"
+  |
+  """.stripMargin.loadConfig
+
+  val workerPath = config.getString("workerPath")
+  println(workerPath)
+
   // Create an ActorSystem and ask it for the ActorRef corresponding to the
-  // workerPath we just created. This is complicated by the need to
-  // use ActorSystem.actorSelection() and because it is possible (very possible)
-  // that the remote chattyWorker we're looking for does not exist. Why might
-  // it not exist? Perhaps you forgot to start the worker program?
-  
-  val managerSystem = ActorSystem("managerSystem", conf)
-  
+  // workerPath. This is complicated by the need to
+  // use ActorSystem.actorSelection() and because it is possible (very possible) that the
+  // remote chattyWorker we're looking for does not exist.
+
+  val managerSystem = ActorSystem("managerSystem", config)
+
   val selection = managerSystem.actorSelection(workerPath)
 
-  // Once we have a ActorSelection we need to get an Actor from it. There are a
-  // few ways to do this. I'm using resolveOne() which returns a Future and I
-  // just wait for it to finish. If it returns correctly (it found the ChattyWorker)
-  // then I send "Hello" to the worker; else I print an error.
+  // Once we have a ActorSelection we need to get an Actor from it. There are a few ways to do
+  // this. I'm using resolveOne() which returns a Future and I just wait for it to finish.
+  // If it returns correctly (it found the ChattyWorker) then I send "Hello" to the worker; otherwise
+  // I print an error.
   selection.resolveOne(5.seconds).onComplete {
     case Success(actor) =>
       println(s"Found $actor")
@@ -240,21 +228,17 @@ class Manager150 {
 }
 ```
 
-Let's start by taking a closer look at the workerPath
+Let's start by taking a closer look at the workerPath defined in the configuration.
 
 ```
-  // Construct the remote path to the ChattyWorker.
-  val hostname = conf.getString("worker.hostname")
-  val port = conf.getString("worker.port")
-  
-  val workerPath = s"akka.tcp://workerSystem@$hostname:$port/user/chattyWorker"
+workerPath = "akka.tcp://workerSystem@"${worker.hostname}":"${worker.port}"/user/chattyWorker"
   ```
 
-The Manager150 program is going to connect to the Worker150 program that is running in its own
-JVM (possibly on a different machine). So Manager150 needs to know where Worker150 is and what specific
-ActprSystem and Actor on Worker150 it wants to use. Well we know that Worker150 is on the machine at 
-IP ${worker.hostname} and that it is listening to port ${worker.port} (we know this because these values
-are defined in Profiles.conf). We also know that the ActorSystem used by Worker150 is called "workerSystem"
+We want the Manager150 program to connect to the Worker150 program. So Manager150 needs to know where 
+Worker150 is and the names of the
+ActprSystem and Actor to use. Well, we know that Worker150 is on the machine at
+IP `${worker.hostname}` and that it is listening to port `${worker.port}` (we know this because these values
+are defined in the profile). We also know that the ActorSystem used by Worker150 is called "workerSystem"
 and that the Actor is named "chattyWorker". Putting these items together we create "remotePath" which is
 a URI. On my desktop running with the loopback profile I get the value:
 
@@ -272,23 +256,144 @@ We need to prefix "chattyWorker" with "/user" because (to quote the Akka documen
 >guardian actor for all user-created top-level actors; actors created using ActorSystem.actorOf are
 >found below this one.
 
-The next step is to create an ActorSystem for the Manager150 program.
-```
+The next step is to create an ActorSystem and lookup the worker.
+```scala
   val managerSystem = ActorSystem("managerSystem", conf)
   
   val selection = managerSystem.actorSelection(workerPath)
 ```
 
-The two consoles should ... When the action stops, stop each system by pressing
-Ctrl-C.
+Under the hood Akka has used the information in `workerPath` to find the worker's host and ask it for
+a reference to the ChattyWorker. The final piece of code gets an ActorRef from the ActorSelection. The
+method `ActorSelection.resolveOne` returns a Future. The `onComplete` waits for the Future to complete
+or fail. If the future completes I print that the ActorRef was found, and I send the Actor a "Hello". If
+the Future fails I print out an error.
+
+```scala
+  selection.resolveOne(5.seconds).onComplete {
+    case Success(actor) =>
+      println(s"Found $actor")
+      actor ! "Hello"
+
+    case Failure(ex) =>
+      println(s"Did not find anything for $workerPath")
+  }
+```
+
+##Discussion
+
+There are a few variations that are interesting.
+
+###Two Masters, One Worker
+
+* I start M150 and W150 on my desktop using the `local` profile. I see that the manager finds the
+worker and sends him a "Hello".
+* I start another M150 on my raspberry pi using the `manager_on_rpi1` profile. This manager
+finds the same worker and sends it a "Hello" too. Here's the worker's output:
+
+```
+ChattyWorker preStart
+ChattyWorker got message: Hello
+ChattyWorker got message: Hello
+```
+
+Notice that the same instance of ChattyWorker is handling messages from both Managers. The managers
+ask the Worker150 program for "/user/ChattyWorker", and Worker150 looks it up in its ActorSystem and 
+returns the reference to them. If you modify the Manager150 program to ask for a different worker 
+(ChattyWorker2) then Worker150 will not find it and you'll see errors. Here's some example output:
+
+```
+Main M150
+   akka.tcp://workerSystem@192.168.1.8:5000/user/chattyWorker2
+   Did not find anything for akka.tcp://workerSystem@192.168.1.8:5000/user/chattyWorker2
+```
+
+
+
+Think about this configuration:
+* Worker150 is running on the machine at 192.168.1.10
+* Manager150 tries to connect using a `workerPath` containing a incorrect IP 192.168.1.50
+
+
+#Lesson 200
+
+Simple example of remote Actor creation. The Worker200 program starts first. When Manager200 starts 
+it asks the Worker200 program to create a new Actor and it (Manager200) returns a reference to the
+remote Actor. Manager200 then sends a "Hello Remote" message to the Worker node where it is displayed.
+
+```scala
+package org.bodhi.remoting.tutorial
+
+import akka.actor.{Props, ActorSystem}
+
+class Worker200 {
+
+  val config = """
+  |akka {
+  |  loglevel = "WARNING"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  |  remote.netty.tcp {
+  |    hostname = ${worker.hostname}
+  |    port = ${worker.port}
+  |  }
+  |}
+  """.stripMargin.loadConfig
+
+  // Create ActorSystem.
+  val workerSystem = ActorSystem("workerSystem", config)
+}
+```
+
+```scala
+package org.bodhi.remoting.tutorial
+
+import akka.actor.{Props, ActorSystem}
+
+class Manager200 {
+  val config = """
+  |akka {
+  |  loglevel = "WARNING"
+  |  //loglevel = "DEBUG"
+  |
+  |  actor.provider = "akka.remote.RemoteActorRefProvider"
+  |
+  |  actor.deployment {
+  |    "/chattyWorker" {
+  |      remote = "akka.tcp://workerSystem@"${worker.hostname}":"${worker.port}
+  |    }
+  |  }
+  |
+  | remote.netty.tcp {
+  |   hostname = ${manager.hostname}
+  |   port = ${manager.port}
+  | }
+  |}
+  |
+  """.stripMargin.loadConfig
+  
+  val managerSystem = ActorSystem("managerSystem", config)
+
+  val actor = managerSystem.actorOf(Props[ChattyWorker], "chattyWorker")
+  
+  actor ! "Hello Remote Worker"
+}
+```
+
+```
+Main W200
+ChattyWorker preStart
+ChattyWorker got message: Hello Remote Worker
+ChattyWorker preStart
+ChattyWorker got message: Hello Remote Worker
+```
 
 
 Problems?
 ---------
 
-If you're having any problems with this code, edit the _application.conf_
-file in the _src/main/resources_ directory of each project, and remove the
-comments from the debug-related lines.
+
 
 More Information
 ----------------
